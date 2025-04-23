@@ -24,7 +24,7 @@ class ScheduledCrawler:
     def __init__(self, output_dir="data", check_updates=False, skip_existing=False,
                  db_host="localhost", db_port=5432, db_name="milk_products", 
                  db_user="postgres", db_password="postgres",
-                 max_pages=0, min_delay=2.0, max_delay=5.0):
+                 max_pages=0, min_delay=2.0, max_delay=5.0, config_file=None):
         """
         初始化定时爬虫
         参数:
@@ -39,6 +39,7 @@ class ScheduledCrawler:
             max_pages: 最大爬取页数，0表示爬取所有页面
             min_delay: 最小请求延迟(秒)
             max_delay: 最大请求延迟(秒)
+            config_file: 配置文件路径
         """
         self.output_dir = output_dir
         self.check_updates = check_updates
@@ -54,12 +55,35 @@ class ScheduledCrawler:
         # 存储已有产品信息
         self.existing_products = {}
         
+        # 存储登录信息
+        self.username = None
+        self.password = None
+        
         # 确保输出目录存在
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         
         # 设置日志
         self.setup_logger()
+        
+        # 加载配置文件
+        if config_file and os.path.exists(config_file):
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    
+                # 获取登录信息
+                if 'naifenzhiku' in config:
+                    self.username = config['naifenzhiku'].get('username')
+                    self.password = config['naifenzhiku'].get('password')
+                    self.logger.info(f"已从配置文件加载登录信息: {self.username}")
+                
+                # 获取输出目录
+                if 'output_dir' in config:
+                    self.output_dir = config['output_dir']
+                    self.logger.info(f"已从配置文件设置输出目录: {self.output_dir}")
+            except Exception as e:
+                self.logger.error(f"读取配置文件时出错: {e}")
         
         # 如果需要检查更新，连接数据库并获取已有产品信息
         if check_updates:
@@ -228,7 +252,9 @@ class ScheduledCrawler:
             product_file=products_file,
             skip_products=True,  # 直接使用筛选后的产品列表
             min_delay=self.delay_range[0],
-            max_delay=self.delay_range[1]
+            max_delay=self.delay_range[1],
+            username=self.username,
+            password=self.password
         )
         
         # 运行流水线
@@ -294,7 +320,9 @@ class ScheduledCrawler:
                             skip_products=True,  # 直接使用已爬取的产品列表
                             max_pages=self.max_pages,
                             min_delay=self.delay_range[0],
-                            max_delay=self.delay_range[1]
+                            max_delay=self.delay_range[1],
+                            username=self.username,
+                            password=self.password
                         )
                     else:
                         self.logger.error("爬取产品列表失败!")
@@ -305,7 +333,9 @@ class ScheduledCrawler:
                         output_dir=self.output_dir,
                         max_pages=self.max_pages,
                         min_delay=self.delay_range[0],
-                        max_delay=self.delay_range[1]
+                        max_delay=self.delay_range[1],
+                        username=self.username,
+                        password=self.password
                     )
                 
                 result_file = pipeline.run_pipeline()
@@ -354,6 +384,7 @@ def main():
     parser.add_argument("--max-pages", type=int, default=0, help="最大爬取页数，0表示爬取所有页面")
     parser.add_argument("--min-delay", type=float, default=2.0, help="最小请求延迟(秒)，默认为2.0秒")
     parser.add_argument("--max-delay", type=float, default=5.0, help="最大请求延迟(秒)，默认为5.0秒")
+    parser.add_argument("--config-file", type=str, help="配置文件路径")
     
     # 解析命令行参数
     args = parser.parse_args()
@@ -374,7 +405,8 @@ def main():
         db_password=args.db_password,
         max_pages=args.max_pages,
         min_delay=args.min_delay,
-        max_delay=args.max_delay
+        max_delay=args.max_delay,
+        config_file=args.config_file
     )
     
     # 运行定时爬虫

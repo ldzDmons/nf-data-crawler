@@ -166,16 +166,16 @@ environment:
 
 ```bash
 # 执行增量更新（根据tag_time对比只更新变化的产品）
-docker-compose exec cron-crawler python src/scheduled_crawler.py --check-updates --output /app/data --db-host postgres
+docker-compose exec cron-crawler python src/scheduled_crawler.py --check-updates --output /app/data --db-host postgres --config-file /app/config/config.json
 
 # 执行完整爬取（不检查现有数据）
-docker-compose exec cron-crawler python src/scheduled_crawler.py --output /app/data --db-host postgres
+docker-compose exec cron-crawler python src/scheduled_crawler.py --output /app/data --db-host postgres --config-file /app/config/config.json
 
 # 只爬取第一页数据并自动导入数据库（快速测试适用）
-docker-compose exec cron-crawler python src/scheduled_crawler.py --max-pages 1 --output /app/data --db-host postgres
+docker-compose exec cron-crawler python src/scheduled_crawler.py --max-pages 1 --output /app/data --db-host postgres --config-file /app/config/config.json
 ```
 
-> **注意**：使用`--max-pages 1`参数可以限制爬虫只爬取第一页数据，适合快速测试系统功能。系统会自动保存数据并导入到数据库中。使用`scheduled_crawler.py`脚本可以确保完整的爬取、数据处理和数据库导入流程。
+> **注意**：使用`--max-pages 1`参数可以限制爬虫只爬取第一页数据，适合快速测试系统功能。使用`--config-file`参数指定配置文件路径，确保能获取正确的账号密码。系统会自动保存数据并导入到数据库中。
 
 ### 连接到容器
 
