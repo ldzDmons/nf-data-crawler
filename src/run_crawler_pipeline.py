@@ -96,6 +96,9 @@ class CrawlerPipeline:
         # 初始化产品爬虫
         crawler = NaifenzhikuCrawler(resume_from_page=self.resume_from_page)
         
+        # 设置输出目录
+        crawler.output_dir = self.output_dir
+        
         # 开始爬取
         if self.max_pages > 0:
             products = crawler.crawl_pages(start_page=self.resume_from_page or 1, max_pages=self.max_pages)

@@ -141,6 +141,9 @@ class ScheduledCrawler:
         # 初始化产品爬虫
         crawler = NaifenzhikuCrawler()
         
+        # 确保爬虫使用正确的输出目录
+        crawler.output_dir = self.output_dir
+        
         # 开始爬取产品列表
         products = []
         
@@ -149,6 +152,11 @@ class ScheduledCrawler:
                 # 爬取指定页数
                 self.logger.info(f"爬取前 {self.max_pages} 页的产品")
                 products = crawler.crawl_pages(start_page=1, max_pages=self.max_pages)
+                
+                # 确保产品数据被保存
+                if products and len(products) > 0 and crawler.all_products:
+                    saved_file = crawler.save_products_data(is_final=True)
+                    self.logger.info(f"成功保存产品数据到 {saved_file}")
             else:
                 # 爬取所有页面
                 self.logger.info("爬取所有页面的产品")
@@ -271,12 +279,34 @@ class ScheduledCrawler:
                     return True
             else:
                 # 直接运行完整流水线
-                pipeline = CrawlerPipeline(
-                    output_dir=self.output_dir,
-                    max_pages=self.max_pages,
-                    min_delay=self.delay_range[0],
-                    max_delay=self.delay_range[1]
-                )
+                # 先爬取产品列表
+                if self.max_pages > 0:
+                    crawler = NaifenzhikuCrawler()
+                    crawler.output_dir = self.output_dir
+                    products = crawler.crawl_pages(start_page=1, max_pages=self.max_pages)
+                    if products and len(products) > 0:
+                        saved_file = crawler.save_products_data(is_final=True)
+                        self.logger.info(f"成功保存产品数据到 {saved_file}")
+                        # 使用保存的文件作为产品列表文件
+                        pipeline = CrawlerPipeline(
+                            output_dir=self.output_dir,
+                            product_file=saved_file,
+                            skip_products=True,  # 直接使用已爬取的产品列表
+                            max_pages=self.max_pages,
+                            min_delay=self.delay_range[0],
+                            max_delay=self.delay_range[1]
+                        )
+                    else:
+                        self.logger.error("爬取产品列表失败!")
+                        return False
+                else:
+                    # 使用标准流水线爬取所有页面
+                    pipeline = CrawlerPipeline(
+                        output_dir=self.output_dir,
+                        max_pages=self.max_pages,
+                        min_delay=self.delay_range[0],
+                        max_delay=self.delay_range[1]
+                    )
                 
                 result_file = pipeline.run_pipeline()
                 

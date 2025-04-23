@@ -64,9 +64,12 @@ class NaifenzhikuCrawler:
             "205.198.76.188"
         ]
         
+        # 输出目录
+        self.output_dir = "data"
+        
         # 恢复爬取相关
         self.resume_from_page = resume_from_page
-        self.resume_file = "data/products_partial.json"
+        self.resume_file = f"{self.output_dir}/products_partial.json"
         
         # 存储所有产品数据
         self.all_products = []
@@ -82,7 +85,7 @@ class NaifenzhikuCrawler:
         self.read_timeout = 30    # 读取超时（秒）
         
         # 确保数据目录存在
-        os.makedirs("data", exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs("logs", exist_ok=True)
 
     def fetch_page(self, page):
@@ -793,6 +796,11 @@ class NaifenzhikuCrawler:
                 pbar.close()
             
             print(f"爬取完成，共获取{len(self.all_products)}个产品")
+            
+            # 强制保存最终数据，确保即使只爬取一页也会保存
+            if self.all_products:
+                self.save_products_data(is_final=True)
+            
             return self.all_products
             
         except KeyboardInterrupt:
@@ -1029,11 +1037,14 @@ class NaifenzhikuCrawler:
         参数:
             is_final: 是否是最终数据
         """
+        # 确保输出目录存在
+        os.makedirs(self.output_dir, exist_ok=True)
+        
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"data/naifenzhiku_products_{timestamp}.json"
+        filename = f"{self.output_dir}/naifenzhiku_products_{timestamp}.json"
         
         if is_final:
-            filename = f"data/naifenzhiku_products_final_{timestamp}.json"
+            filename = f"{self.output_dir}/naifenzhiku_products_final_{timestamp}.json"
             
             # 同时生成CSV文件
             try:
@@ -1045,6 +1056,7 @@ class NaifenzhikuCrawler:
             json.dump(self.all_products, f, ensure_ascii=False, indent=2)
         
         print(f"已保存产品数据到 {filename}")
+        return filename
         
     def save_to_csv(self, csv_filename):
         """
@@ -1089,7 +1101,7 @@ class NaifenzhikuCrawler:
             next_page: 下次爬取的页码
         """
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"data/resume_info_{timestamp}.json"
+        filename = f"{self.output_dir}/resume_info_{timestamp}.json"
         
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump({'next_page': next_page}, f)
