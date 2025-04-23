@@ -27,7 +27,8 @@ class NaifenzhikuMoreDetailCrawler:
         logger=None,
         username=None,
         password=None,
-        auth_token=None
+        auth_token=None,
+        config_file=None
     ):
         """
         初始化爬虫
@@ -41,6 +42,7 @@ class NaifenzhikuMoreDetailCrawler:
             username: 奶粉智库用户名(手机号)
             password: 奶粉智库密码
             auth_token: 直接提供的授权token
+            config_file: 配置文件路径
         """
         # 创建输出目录和日志目录
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -49,14 +51,27 @@ class NaifenzhikuMoreDetailCrawler:
         # 设置日志
         self.logger = logger or self.setup_logger()
         
+        # 加载配置文件
+        config = {}
+        if config_file and os.path.exists(config_file):
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                self.logger.info(f"已从配置文件 {config_file} 加载配置")
+            except Exception as e:
+                self.logger.error(f"加载配置文件时出错: {e}")
+        
+        # 配置优先级：直接参数 > 配置文件
+        nfzk_config = config.get('naifenzhiku', {})
+        
         # 其他初始化
         self.product_file = product_file
-        self.output_dir = output_dir
-        self.retry_count = retry_count
-        self.retry_delay = retry_delay
-        self.delay_range = delay_range
-        self.username = username
-        self.password = password
+        self.output_dir = output_dir or config.get('output_dir', 'data')
+        self.retry_count = retry_count or nfzk_config.get('retry_count', 3)
+        self.retry_delay = retry_delay or nfzk_config.get('retry_delay', 3)
+        self.delay_range = delay_range or tuple(nfzk_config.get('delay_range', (1, 2)))
+        self.username = username or nfzk_config.get('username')
+        self.password = password or nfzk_config.get('password')
         self.auth_token = auth_token or ""
         
         # 接口URL
@@ -110,7 +125,10 @@ class NaifenzhikuMoreDetailCrawler:
             self.logger.info(f"使用提供的授权token: {self.auth_token[:20]}...")
         # 否则尝试登录获取token
         elif self.username and self.password:
+            self.logger.info(f"尝试使用账号 {self.username} 登录")
             self.login()
+        else:
+            self.logger.warning("未提供登录信息，将无法获取需要授权的数据")
     
     def setup_logger(self):
         """设置日志配置"""
@@ -646,6 +664,7 @@ def main():
     parser.add_argument("--password", "-p", type=str, help="奶粉智库密码")
     parser.add_argument("--token", "-t", type=str, help="直接提供的授权token")
     parser.add_argument("--token-file", "-tf", type=str, help="包含授权token的文件路径")
+    parser.add_argument("--config", "-c", type=str, default="config.json", help="配置文件路径，默认为'config.json'")
     
     # 解析命令行参数
     args = parser.parse_args()
@@ -668,6 +687,13 @@ def main():
     print("奶粉智库产品额外详情爬虫启动")
     print("=" * 50)
     
+    # 检查配置文件
+    config_file = args.config
+    if os.path.exists(config_file):
+        print(f"使用配置文件: {config_file}")
+    else:
+        print(f"警告: 配置文件 {config_file} 不存在")
+    
     # 初始化爬虫
     crawler = NaifenzhikuMoreDetailCrawler(
         product_file=args.input,
@@ -675,7 +701,8 @@ def main():
         delay_range=(args.min_delay, args.max_delay),
         username=args.username,
         password=args.password,
-        auth_token=auth_token
+        auth_token=auth_token,
+        config_file=config_file
     )
     
     # 开始爬取

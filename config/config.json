@@ -1,0 +1,11 @@
+{
+  "naifenzhiku": {
+    "username": "",
+    "password": "",
+    "delay_range": [1, 3],
+    "retry_count": 3,
+    "retry_delay": 3
+  },
+  "output_dir": "/app/data",
+  "log_dir": "/app/logs"
+} 

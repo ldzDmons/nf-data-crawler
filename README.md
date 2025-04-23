@@ -1,6 +1,30 @@
+请确保填写正确的奶粉智库账号和密码
+
 # 奶粉智库数据爬虫与数据库管理系统
 
 这是一个用于爬取奶粉智库网站的数据，并将其存储到PostgreSQL数据库的完整解决方案。整个系统支持Docker化部署，方便在各种环境中快速启动和使用。
+
+## 配置指南
+
+### 配置文件设置
+
+系统使用配置文件来存储敏感信息，如账号密码。在项目根目录下创建 `config` 目录并放入 `config.json` 文件:
+
+```json
+{
+  "naifenzhiku": {
+    "username": "你的奶粉智库账号",
+    "password": "你的奶粉智库密码",
+    "delay_range": [1, 3],
+    "retry_count": 3,
+    "retry_delay": 3
+  },
+  "output_dir": "/app/data",
+  "log_dir": "/app/logs"
+}
+```
+
+此配置文件会被挂载到Docker容器的 `/app/config` 目录，而不是构建到镜像中，确保敏感信息安全。
 
 ## 功能特点
 
@@ -32,6 +56,8 @@
 确保安装了Docker和Docker Compose，然后执行：
 
 ```bash
+# 确保创建了config/config.json文件并填写了账号信息
+
 # 构建并启动所有服务
 docker-compose up -d
 
@@ -47,13 +73,20 @@ docker-compose logs -f
 pip install -r requirements.txt
 ```
 
-#### 2.2 运行爬虫
+#### 2.2 创建并配置config.json
 
 ```bash
-python src/run_crawler_pipeline.py
+mkdir -p config
+# 编辑 config/config.json 文件，填入账号密码
 ```
 
-#### 2.3 设置数据库
+#### 2.3 运行爬虫
+
+```bash
+python src/run_crawler_pipeline.py --config config/config.json
+```
+
+#### 2.4 设置数据库
 
 ```bash
 # 创建PostgreSQL数据库
@@ -63,7 +96,7 @@ psql -U postgres -c "CREATE DATABASE milk_products;"
 psql -U postgres -d milk_products -f database/schema.sql
 ```
 
-#### 2.4 导入数据
+#### 2.5 导入数据
 
 ```bash
 python src/db_import.py --file data/naifenzhiku_page2_combined_20250423_110444.json

@@ -31,15 +31,21 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制源代码
+# 复制源代码（不包含敏感配置文件）
 COPY src/ /app/src/
 
-# 创建日志和数据目录
-RUN mkdir -p /app/logs /app/data
+# 创建日志、数据和配置目录
+RUN mkdir -p /app/logs /app/data /app/config
+
+# 创建默认配置文件模板
+RUN echo '{\n  "naifenzhiku": {\n    "username": "",\n    "password": "",\n    "delay_range": [1, 3],\n    "retry_count": 3,\n    "retry_delay": 3\n  },\n  "output_dir": "data",\n  "log_dir": "logs"\n}' > /app/config/config.template.json
 
 # 启动脚本
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# 声明卷，这样外部可以挂载配置文件、数据和日志
+VOLUME ["/app/config", "/app/data", "/app/logs"]
 
 # 默认命令
 CMD ["python", "src/scheduled_crawler.py", "--help"]

@@ -54,6 +54,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./config:/app/config
     networks:
       - milk_network
     ports:
@@ -82,3 +83,7 @@ volumes:
 #
 # 手动导入数据命令
 # docker-compose exec cron-crawler python src/db_import.py --host postgres --dbname milk_products --file /app/data/你的文件名.json 
+#
+# 配置文件
+# 在本地创建 config 目录并放入 config.json 文件，该文件会被挂载到容器的 /app/config 目录
+# 配置文件中可以设置账号密码等敏感信息 
