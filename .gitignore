@@ -1,0 +1,30 @@
+# Python环境
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# 爬虫数据和日志
+/data/
+/logs/
+
+# IDE配置
+.cursor/
+.idea/
+.vscode/
+
+# 其他系统文件
+.DS_Store
+Thumbs.db
+
+# 缓存文件
+*.log
+.pytest_cache/
+.coverage
+htmlcov/ 

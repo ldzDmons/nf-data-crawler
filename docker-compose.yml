@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库服务
+  postgres:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=milk_products
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - milk_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: postgres -c 'max_connections=200'
+
+  # 定时爬虫服务
+  cron-crawler:
+    build:
+      context: .
+      dockerfile: crawler.Dockerfile
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 数据库配置
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=milk_products
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      # 时区设置
+      - TZ=Asia/Shanghai
+      # 定时任务配置，格式为: 分 时 日 月 周
+      # 默认为每周日凌晨2点执行
+      - CRON_SCHEDULE=0 2 * * 0
+      # 爬虫参数配置
+      - CRAWLER_OUTPUT_DIR=/app/data
+      - CRAWLER_MAX_PAGES=0
+      - CRAWLER_MIN_DELAY=2.0
+      - CRAWLER_MAX_DELAY=5.0
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - milk_network
+    ports:
+      # 暴露SSH端口便于连接到容器
+      - "2222:22"
+    # 使用自定义入口脚本
+    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+
+networks:
+  milk_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+# 初始化数据库命令
+# 如果PostgreSQL跳过了初始化，可以手动执行以下命令创建表结构
+# docker-compose cp database/schema.sql postgres:/tmp/
+# docker-compose exec postgres bash -c "psql -U postgres -d milk_products -f /tmp/schema.sql"
+#
+# 手动触发爬虫命令
+# docker-compose exec cron-crawler python src/scheduled_crawler.py --check-updates --output /app/data --db-host postgres
+#
+# 通过SSH连接到容器
+# ssh -p 2222 root@localhost (密码: password)
+#
+# 手动导入数据命令
+# docker-compose exec cron-crawler python src/db_import.py --host postgres --dbname milk_products --file /app/data/你的文件名.json 

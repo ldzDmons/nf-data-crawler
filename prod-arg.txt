@@ -1,0 +1,17 @@
+id
+name
+thumbnail:缩略图
+m_source:奶源
+area:产地
+price:价格
+tag:版本
+tag_time:更新时间
+
+
+
+详情：
+mixtu:配料表
+level:段位
+nutrient:营养成分
+
+fg_comment:奶粉点评
