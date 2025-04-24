@@ -31,7 +31,7 @@ if [ -f "$CONFIG_FILE" ]; then
     CONFIG_PARAM="--config $CONFIG_FILE"
 fi
 
-echo "${CRON_SCHEDULE:-0 2 * * 0} cd /app && python src/scheduled_crawler.py --check-updates --output ${CRAWLER_OUTPUT_DIR:-/app/data} --skip-existing --max-pages ${CRAWLER_MAX_PAGES:-0} --min-delay ${CRAWLER_MIN_DELAY:-2.0} --max-delay ${CRAWLER_MAX_DELAY:-5.0} --db-host ${DB_HOST:-postgres} --db-port ${DB_PORT:-5432} --db-name ${DB_NAME:-milk_products} --db-user ${DB_USER:-postgres} --db-password ${DB_PASSWORD:-postgres} $CONFIG_PARAM >> /app/logs/cron_crawler.log 2>&1" > /etc/cron.d/crawler-cron
+echo "${CRON_SCHEDULE:-0 2 * * 0} cd /app && /usr/local/bin/python src/scheduled_crawler.py --check-updates --output ${CRAWLER_OUTPUT_DIR:-/app/data} --skip-existing --max-pages ${CRAWLER_MAX_PAGES:-0} --min-delay ${CRAWLER_MIN_DELAY:-2.0} --max-delay ${CRAWLER_MAX_DELAY:-5.0} --db-host ${DB_HOST:-postgres} --db-port ${DB_PORT:-5432} --db-name ${DB_NAME:-milk_products} --db-user ${DB_USER:-postgres} --db-password ${DB_PASSWORD:-postgres} $CONFIG_PARAM >> /app/logs/cron_crawler.log 2>&1" > /etc/cron.d/crawler-cron
 chmod 0644 /etc/cron.d/crawler-cron
 crontab /etc/cron.d/crawler-cron
 
@@ -52,7 +52,7 @@ echo "- 配置文件: $CONFIG_FILE"
 echo "================================"
 
 echo "容器已完成初始化，可通过以下命令手动执行爬虫:"
-echo "python src/scheduled_crawler.py --check-updates --output /app/data --db-host postgres $CONFIG_PARAM"
+echo "/usr/local/bin/python src/scheduled_crawler.py --check-updates --output /app/data --db-host postgres $CONFIG_PARAM"
 echo ""
 
 # 如果传入了命令，则执行该命令，否则启动cron服务
